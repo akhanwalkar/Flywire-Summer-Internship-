@@ -4,21 +4,21 @@ Multiple approaches were used to get to the final subgraph. This still isnt the 
 Having to take into consideration the time complexity and running time.  
 This is essentially a Maximum common induced subgraph problem (NP-hard)
 Challenges:
-combinatorial explosion
-noisy biological data
-missing edges
+combinatorial explosion,
+noisy biological data,
+missing edges,
 structural variation
 
-Evolution of Our Approach
+Evolution of Our Approach:
 We did not arrive at the final method immediately — we iteratively improved it.
 
-Phase 1 — Exact Matching (FAILED)
+**Phase 1 — Exact Matching (FAILED)**
 Idea:
 Require perfect structural equality:
-Pythone1 == e2 == e3Show more lines
+Pythone1 == e2 == e3Show more lines  
 Result:
 -Almost no matches found
--Extremely brittle
+-Extremely brittle  
 Insight:
   Real connectomes are noisy — exact matching is unrealistic.
 
