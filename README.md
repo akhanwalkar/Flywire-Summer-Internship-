@@ -81,6 +81,151 @@ missing edges,
 noisy data,
 slight biological differences ,while still enforcing global structure  
 
+
+MAIN TECHNICAL APPROACH  
+# Connectome Consensus Motif Discovery
+
+## Overview
+
+This project identifies **large, weakly connected directed motifs shared across multiple connectome datasets** (FlyWire).  
+
+Rather than solving the exact maximum common induced subgraph problem (which is computationally intractable at this scale), this implementation uses a **coarse-structured, tolerance-aware heuristic search** that balances:
+
+- motif **size**
+- structural **consistency**
+- computational **feasibility**
+
+The method searches for **node correspondences across three datasets at a time** and returns the largest valid circuit found.
+
+---
+
+## Datasets
+
+The following directed connectomes are used:
+
+- BANC
+- FAFB
+- MANC
+- MAOL
+- MCNS
+
+Each dataset is represented as a directed graph:
+- nodes = neurons  
+- edges = directed synaptic connections  
+
+---
+
+## High-Level Approach
+
+The pipeline consists of five main stages:
+
+1. **Graph construction**
+2. **Coarse structural colouring**
+3. **Shared-colour filtering**
+4. **Greedy motif growth**
+5. **Tolerant validation and selection**
+
+---
+
+## 1. Graph Representation
+
+Each dataset is loaded into a lightweight adjacency structure:
+
+- `adj_out[u]` = outgoing neighbours  
+- `adj_in[u]` = incoming neighbours  
+
+This avoids heavy graph libraries and enables fast edge lookups.
+
+---
+
+## 2. Coarse Structural Colouring
+
+Each neuron is assigned a **coarse structural signature** based on:
+
+- binned in-degree  
+- binned out-degree  
+- reciprocal degree  
+- self-loop indicator  
+
+These features are discretised into bins (log-scale) to ensure:
+
+- structural similarity is preserved  
+- cross-dataset overlap is maintained  
+
+An optional Weisfeiler–Lehman refinement step can be applied, but is typically disabled to avoid over-fragmentation.
+
+---
+
+## 3. Shared Colour Filtering
+
+For every triple of datasets:
+
+- identify colour classes present in all three graphs  
+- compute how many neurons belong to each class  
+- prioritise **rare shared colours** for seeding  
+
+This step dramatically reduces the search space and provides a rough upper bound on motif size.
+
+---
+
+## 4. Greedy Motif Growth
+
+The core search algorithm builds a motif incrementally.
+
+### Seed selection
+- choose triples of nodes (one per dataset) with matching colour
+
+### Iterative expansion
+At each step:
+
+1. Compute the **frontier** (neighbours of current motif)
+2. Restrict candidates to nodes with shared colours
+3. Evaluate candidate triples using:
+   - structural connectivity to current motif
+   - mismatch cost introduced
+4. Select the **best candidate** based on:
+   - strong attachment (connectivity)
+   - low additional disagreement
+   - minimal total mismatches
+
+### Connectivity constraint
+- every new node must connect (weakly) to the existing motif in a consistent way across all datasets
+
+---
+
+## 5. Tolerant Validation
+
+Instead of requiring exact isomorphism during growth, the algorithm allows **controlled disagreement**.
+
+### Disagreement definition
+For each ordered node pair `(i, j)`:
+- compare edge presence across all three graphs
+- count 1 mismatch if they do not agree exactly
+
+### Constraints
+A candidate motif is accepted if:
+
+- total mismatches ≤ `max_total_mismatches`
+- disagreement rate ≤ `max_disagreement_rate`
+- node mapping is one-to-one across datasets
+- motif is **weakly connected** in all three graphs
+
+---
+
+## Objective Function
+
+Solutions are ranked using:
+
+1. **Motif size (primary objective)**
+2. **Total mismatches**
+3. **Disagreement rate**
+
+---
+
+## Output
+
+The best discovered motif is saved as: network.csv  
+
 **Final Algorithm:  **
 1. Load graphs
 adjacency sets
